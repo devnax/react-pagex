@@ -8,6 +8,7 @@
     "build": "parcel build index.html"
   },
   "dependencies": {
+    "path-to-regexp": "^6.2.1",
     "react-app-polyfill": "^3.0.0",
     "regexparam": "^2.0.1"
   },

@@ -1,5 +1,5 @@
 {
-   "version": "1.0.0",
+   "version": "1.1.0",
    "license": "MIT",
    "main": "dist/index.js",
    "typings": "dist/index.d.ts",
@@ -63,6 +63,7 @@
       "typescript": "^3.9.10"
    },
    "dependencies": {
+      "path-to-regexp": "^6.2.1",
       "regexparam": "^2.0.1"
    }
 }

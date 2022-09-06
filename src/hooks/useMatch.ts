@@ -1,42 +1,39 @@
 import { useState, useMemo, useEffect, useId } from 'react'
-import { Factory, RegexPathType } from "../factory"
-import Parser from '../Parser'
+import { Factory, PathString, FactoryItem } from "../factory"
+import Parser from "../Parser";
 
-
-const useMatch = (path: RegexPathType) => {
+const useMatch = (path?: PathString) => {
    const id = useId()
    const [, dispatch] = useState(0)
 
    useMemo(() => {
-      const items = Factory.routes[path]
-      if (!items) Factory.routes[path] = {}
-      Factory.routes[path][id] = {
-         dispatch: () => { },
-         path,
+      let params = null
+      if (path) {
+         params = Parser.isMatch(path, window.location.pathname)
       }
+      Factory.set(id, {
+         id,
+         params,
+         dispatch: () => { },
+         path
+      })
+      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [])
 
    useEffect(() => {
-      Factory.routes[path][id] = {
-         ...Factory.routes[path][id],
+      Factory.set(id, {
+         ...Factory.get(id) as FactoryItem,
          dispatch: () => dispatch(Math.random())
-      }
+      })
+
       return () => {
-         delete Factory.routes[path][id]
+         Factory.delete(id)
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [])
 
-   // Initial Check
-   useMemo(() => {
-      const match = Parser.isMatch(path, window.location.pathname)
-      if (match) {
-         Factory.active = path
-         Factory.params = match.params
-         Factory.query = match.query
-      }
-   }, [])
-
-   return Factory.active === path ? { params: Factory.params, query: Factory.query } : null
+   const item = Factory.get(id)
+   return item?.params
 }
 
 

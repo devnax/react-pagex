@@ -1,64 +1,40 @@
 import Parser from "./Parser";
-
-export type RegexPathType = string
-
-export interface FacyoryRoutesType {
-   path: RegexPathType;
-   dispatch: Function;
+export type PathString = string
+export type FactoryId = string
+export interface FactoryItem {
+   id: string;
+   params: { [key: string]: any } | null;
+   path?: string;
+   dispatch: () => void;
 }
 
-export interface FactoryOption {
-   active: RegexPathType | false; // path
-   params?: { [key: string]: any };
-   query?: { [key: string]: any };
-   routes: {
-      [regexpath: RegexPathType]: {
-         [id: string]: FacyoryRoutesType
+export const Factory = new Map<FactoryId, FactoryItem>()
+
+export const Excute = () => {
+   let isMatched = false;
+   const invalids: FactoryItem[] = []
+
+   Factory.forEach((item, key) => {
+      if (item.params) {
+         Factory.set(key, { ...item, params: null })
+         item.dispatch()
       }
-   },
-   invalids: {
-      [id: string]: FacyoryRoutesType
-   }
+      if (item.path) {
+         const params = Parser.isMatch(item.path, window.location.pathname)
+         if (params) {
+            isMatched = true
+            Factory.set(key, { ...item, params })
+            item.dispatch()
+         }
+      } else {
+         invalids.push(item)
+      }
+   })
+
+   !isMatched && invalids.forEach((item) => {
+      Factory.set(item.id, { ...item, params: {} })
+      item.dispatch()
+   })
 }
 
-export const Factory: FactoryOption = {
-   active: false,
-   params: {},
-   query: {},
-   routes: {},
-   invalids: {},
-}
-
-
-window.addEventListener('popstate', (event) => {
-   const activeItem = Factory.routes[Factory.active as any] || {}
-   const path = event?.state?.path || window.location.pathname
-
-   let isMatch = false
-   for (let regexpath of Object.keys(Factory.routes)) {
-      const match = Parser.isMatch(regexpath, path)
-
-      if (match) {
-         Factory.active = regexpath
-         Factory.params = match.params
-         Factory.query = match.query
-         Object.values(Factory.routes[regexpath] || {}).forEach(route => route.dispatch())
-         isMatch = true;
-      }
-   }
-
-   Object.values(activeItem).forEach(route => route.dispatch())
-
-   if (!isMatch) {
-      isMatch = false
-      Factory.active = false
-      Factory.params = {}
-      Factory.query = {}
-
-      for (let regexpath of Object.keys(Factory.routes)) {
-         Object.values(Factory.routes[regexpath] || {}).forEach(route => route.dispatch())
-      }
-   }
-   Object.values(Factory.invalids || {}).forEach(route => route.dispatch())
-
-})
+window.addEventListener('popstate', () => Excute())

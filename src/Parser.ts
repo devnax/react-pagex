@@ -1,22 +1,13 @@
-import { parse } from 'regexparam'
+import { match } from 'path-to-regexp'
+
 
 export type Result = {
    keys: string[];
    pattern: RegExp;
 }
 
-export type CallbackProps = { params: { [key: string]: string }, query: { [key: string]: string } }
+export type CallbackProps = { params: { [key: string]: string } }
 export type Callback = (props: CallbackProps) => any;
-
-
-const parseParams = (path: string, result: Result) => {
-   let i = 0, params: { [key: string]: string } = {};
-   let matches: any = result.pattern.exec(path);
-   while (i < result.keys.length) {
-      params[result.keys[i]] = matches[++i] || null;
-   }
-   return params;
-}
 
 const parseQuery = (q = window.location.search) => {
    if (!q) return {}
@@ -30,16 +21,11 @@ const parseQuery = (q = window.location.search) => {
    }
    return query
 }
-const isMatch = (regex_path: string, path: string, callback?: Callback) => {
-   const result = parse(regex_path)
-   const isMatch = result.pattern.test(path)
-   if (isMatch) {
-      let option = { params: parseParams(path, result), query: parseQuery() }
-      if (callback) {
-         return callback(option)
-      }
-      return option
-   }
+
+const isMatch = (regex_path: string, path: string) => {
+   const m = match(regex_path, { decode: decodeURIComponent })
+   const matches = m(path)
+   return matches ? matches.params : null
 }
 
 const Parser = {

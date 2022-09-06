@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Router, Link, Route, useMatch, useInvalid } from '../src'
+import { RouteProvider, Router, Link, Route, useMatch } from '../src'
 
 const Home = () => {
    return <h1>Home</h1>
@@ -27,7 +27,7 @@ const MyRoute = () => {
 
 export default () => {
    return (
-      <div>
+      <RouteProvider>
          <ul>
             <li><Link label="Home" href="/" /></li>
             <li onClick={() => Router.go("/asd/" + Math.random())}>ASD</li>
@@ -45,6 +45,6 @@ export default () => {
          <Route path='/contact' render={Contact} />
          <Route render={Unknown} />
 
-      </div>
+      </RouteProvider>
    )
 }

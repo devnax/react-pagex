@@ -9,13 +9,12 @@ The `react-pagex` is a very tiny library for manage react app routes. It's very 
 
 ```js
 import {
-  Link,
-  Route,
-  Router,
-  useMatch,
-  useInvalid,
-  useParams,
+  RouteProvider, 
+  Link, 
+  useMatch, 
   useQuery,
+  Router, 
+  Route, 
   Parser
 } from 'react-pagex'
 
@@ -48,7 +47,7 @@ const ErrorPage = () => {
 
 export default () => {
    return (
-      <div>
+      <RouteProvider>
          <ul>
             <li><Link label="Home" path="/" /></li>
             <li><Link label="Service" path="/service" /></li>
@@ -60,7 +59,7 @@ export default () => {
          <Route path='/service' render={Service} />
          <Route path='/contact' render={Contact} />
          <Route render={ErrorPage} />
-      </div>
+      </RouteProvider>
    )
 }
 
@@ -91,12 +90,12 @@ const LinkComp = ({children, ...props}) => <div>{children}</div>
 
 ```jsx
 
-const LinkComp = ({children, ...props}) => <div>{children}</div>
-
-const Render = ({params, query}) => <div>Rendered</div>
-
 <Route 
   path="posts/:id"
+  render={Render}
+/>
+// Or 404
+<Route 
   render={Render}
 />
 
@@ -124,31 +123,14 @@ Router.reload()
 
 ```js
 const App = () => {
-  const option = useMatch('/path')
-  if(option){
-    const {params, query} = option
+  const params = useMatch('/path')
+  if(params){
     return <div>Router Match</div> 
   }
   return <></>
 }
 
 ```
-
-### useInvaid
-this is for invalid route. you can use it to show the 404 page
-```js
-const App = () => {
-  const isInvalid = useInvalid()
-  return isInvalid ? <div>404 Page</div> : <></>
-}
-
-```
-
-
-
-### useParams
-Just get the params for the current route
-
 
 ### useQuery
 Just get the current route query with an object
@@ -157,6 +139,5 @@ Just get the current route query with an object
 ### Parser
 The `Parser` is a module for match and parse the route
 ```js
-const option = Parser.isMatch('/path/:id', 'compare path')
-const query = Parser.parseQuery(window.location.search)
+const params = Parser.isMatch('/path/:id', 'compare path')
 ```

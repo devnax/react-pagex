@@ -37552,233 +37552,7 @@ if ("development" === 'production') {
 } else {
   module.exports = require('./cjs/react-dom.development.js');
 }
-},{"./cjs/react-dom.development.js":"../node_modules/react-dom/cjs/react-dom.development.js"}],"../node_modules/regexparam/dist/index.mjs":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.inject = inject;
-exports.parse = parse;
-
-function parse(str, loose) {
-  if (str instanceof RegExp) return {
-    keys: false,
-    pattern: str
-  };
-  var c,
-      o,
-      tmp,
-      ext,
-      keys = [],
-      pattern = '',
-      arr = str.split('/');
-  arr[0] || arr.shift();
-
-  while (tmp = arr.shift()) {
-    c = tmp[0];
-
-    if (c === '*') {
-      keys.push('wild');
-      pattern += '/(.*)';
-    } else if (c === ':') {
-      o = tmp.indexOf('?', 1);
-      ext = tmp.indexOf('.', 1);
-      keys.push(tmp.substring(1, !!~o ? o : !!~ext ? ext : tmp.length));
-      pattern += !!~o && !~ext ? '(?:/([^/]+?))?' : '/([^/]+?)';
-      if (!!~ext) pattern += (!!~o ? '?' : '') + '\\' + tmp.substring(ext);
-    } else {
-      pattern += '/' + tmp;
-    }
-  }
-
-  return {
-    keys: keys,
-    pattern: new RegExp('^' + pattern + (loose ? '(?=$|\/)' : '\/?$'), 'i')
-  };
-}
-
-var RGX =
-/*#__PURE__*/
-/(\/|^)([:*][^/]*?)(\?)?(?=[/.]|$)/g; // error if key missing?
-
-function inject(route, values) {
-  return route.replace(RGX, function (x, lead, key, optional) {
-    x = values[key == '*' ? 'wild' : key.substring(1)];
-    return x ? '/' + x : optional || key == '*' ? '' : '/' + key;
-  });
-}
-},{}],"../src/Parser.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.isMatch = exports.getQuery = exports.getParams = exports.default = void 0;
-
-var _regexparam = require("regexparam");
-
-var getParams = function getParams(path, result) {
-  var i = 0,
-      params = {};
-  var matches = result.pattern.exec(path);
-
-  while (i < result.keys.length) {
-    params[result.keys[i]] = matches[++i] || null;
-  }
-
-  return params;
-};
-
-exports.getParams = getParams;
-
-var getQuery = function getQuery(q) {
-  if (q === void 0) {
-    q = window.location.search;
-  }
-
-  if (!q) return {};
-  var query_string = q.substring(1);
-  var vars = query_string.split('&');
-  var query = {};
-
-  for (var i = 0; i < vars.length; i++) {
-    var pair = vars[i].split('=');
-    query[pair[0]] = pair[1];
-    query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
-  }
-
-  return query;
-};
-
-exports.getQuery = getQuery;
-
-var isMatch = function isMatch(regex_path, path, callback) {
-  var result = (0, _regexparam.parse)(regex_path);
-  var isMatch = result.pattern.test(path);
-
-  if (isMatch) {
-    var option = {
-      params: getParams(path, result),
-      query: getQuery()
-    };
-
-    if (callback) {
-      return callback(option);
-    }
-
-    return option;
-  }
-};
-
-exports.isMatch = isMatch;
-var Parser = {
-  isMatch: isMatch,
-  getParams: getParams,
-  getQuery: getQuery
-};
-var _default = Parser;
-exports.default = _default;
-},{"regexparam":"../node_modules/regexparam/dist/index.mjs"}],"../src/factory.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.Factory = void 0;
-
-var _Parser = _interopRequireDefault(require("./Parser"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var Factory = {
-  active: false,
-  params: {},
-  query: {},
-  routes: {},
-  invalids: {}
-};
-exports.Factory = Factory;
-window.addEventListener('popstate', function (event) {
-  var _a;
-
-  var activeItem = Factory.routes[Factory.active] || {};
-  var path = ((_a = event === null || event === void 0 ? void 0 : event.state) === null || _a === void 0 ? void 0 : _a.path) || window.location.pathname;
-  var isMatch = false;
-
-  for (var _i = 0, _b = Object.keys(Factory.routes); _i < _b.length; _i++) {
-    var regexpath = _b[_i];
-
-    var match = _Parser.default.isMatch(regexpath, path);
-
-    if (match) {
-      Factory.active = regexpath;
-      Factory.params = match.params;
-      Factory.query = match.query;
-      Object.values(Factory.routes[regexpath] || {}).forEach(function (route) {
-        return route.dispatch();
-      });
-      isMatch = true;
-    }
-  }
-
-  Object.values(activeItem).forEach(function (route) {
-    return route.dispatch();
-  });
-
-  if (!isMatch) {
-    isMatch = false;
-    Factory.active = false;
-    Factory.params = {};
-    Factory.query = {};
-
-    for (var _c = 0, _d = Object.keys(Factory.routes); _c < _d.length; _c++) {
-      var regexpath = _d[_c];
-      Object.values(Factory.routes[regexpath] || {}).forEach(function (route) {
-        return route.dispatch();
-      });
-    }
-  }
-
-  Object.values(Factory.invalids || {}).forEach(function (route) {
-    return route.dispatch();
-  });
-});
-},{"./Parser":"../src/Parser.ts"}],"../src/hooks/Router.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-var useRouter = {
-  go: function go(path) {
-    history.pushState({
-      path: path
-    }, "", path);
-    dispatchEvent(new PopStateEvent("popstate", {
-      state: {
-        path: path
-      }
-    }));
-  },
-  reload: function reload() {
-    dispatchEvent(new PopStateEvent("popstate", {
-      state: {
-        path: location.pathname
-      }
-    }));
-  },
-  back: function back() {
-    return history.back();
-  },
-  forward: function forward() {
-    return history.forward();
-  }
-};
-var _default = useRouter;
-exports.default = _default;
-},{}],"../node_modules/tslib/tslib.es6.js":[function(require,module,exports) {
+},{"./cjs/react-dom.development.js":"../node_modules/react-dom/cjs/react-dom.development.js"}],"../node_modules/tslib/tslib.es6.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38276,6 +38050,710 @@ function __classPrivateFieldIn(state, receiver) {
   if (receiver === null || typeof receiver !== "object" && typeof receiver !== "function") throw new TypeError("Cannot use 'in' operator on non-object");
   return typeof state === "function" ? receiver === state : state.has(receiver);
 }
+},{}],"../node_modules/path-to-regexp/dist.es2015/index.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.compile = compile;
+exports.match = match;
+exports.parse = parse;
+exports.pathToRegexp = pathToRegexp;
+exports.regexpToFunction = regexpToFunction;
+exports.tokensToFunction = tokensToFunction;
+exports.tokensToRegexp = tokensToRegexp;
+
+/**
+ * Tokenize input string.
+ */
+function lexer(str) {
+  var tokens = [];
+  var i = 0;
+
+  while (i < str.length) {
+    var char = str[i];
+
+    if (char === "*" || char === "+" || char === "?") {
+      tokens.push({
+        type: "MODIFIER",
+        index: i,
+        value: str[i++]
+      });
+      continue;
+    }
+
+    if (char === "\\") {
+      tokens.push({
+        type: "ESCAPED_CHAR",
+        index: i++,
+        value: str[i++]
+      });
+      continue;
+    }
+
+    if (char === "{") {
+      tokens.push({
+        type: "OPEN",
+        index: i,
+        value: str[i++]
+      });
+      continue;
+    }
+
+    if (char === "}") {
+      tokens.push({
+        type: "CLOSE",
+        index: i,
+        value: str[i++]
+      });
+      continue;
+    }
+
+    if (char === ":") {
+      var name = "";
+      var j = i + 1;
+
+      while (j < str.length) {
+        var code = str.charCodeAt(j);
+
+        if ( // `0-9`
+        code >= 48 && code <= 57 || // `A-Z`
+        code >= 65 && code <= 90 || // `a-z`
+        code >= 97 && code <= 122 || // `_`
+        code === 95) {
+          name += str[j++];
+          continue;
+        }
+
+        break;
+      }
+
+      if (!name) throw new TypeError("Missing parameter name at ".concat(i));
+      tokens.push({
+        type: "NAME",
+        index: i,
+        value: name
+      });
+      i = j;
+      continue;
+    }
+
+    if (char === "(") {
+      var count = 1;
+      var pattern = "";
+      var j = i + 1;
+
+      if (str[j] === "?") {
+        throw new TypeError("Pattern cannot start with \"?\" at ".concat(j));
+      }
+
+      while (j < str.length) {
+        if (str[j] === "\\") {
+          pattern += str[j++] + str[j++];
+          continue;
+        }
+
+        if (str[j] === ")") {
+          count--;
+
+          if (count === 0) {
+            j++;
+            break;
+          }
+        } else if (str[j] === "(") {
+          count++;
+
+          if (str[j + 1] !== "?") {
+            throw new TypeError("Capturing groups are not allowed at ".concat(j));
+          }
+        }
+
+        pattern += str[j++];
+      }
+
+      if (count) throw new TypeError("Unbalanced pattern at ".concat(i));
+      if (!pattern) throw new TypeError("Missing pattern at ".concat(i));
+      tokens.push({
+        type: "PATTERN",
+        index: i,
+        value: pattern
+      });
+      i = j;
+      continue;
+    }
+
+    tokens.push({
+      type: "CHAR",
+      index: i,
+      value: str[i++]
+    });
+  }
+
+  tokens.push({
+    type: "END",
+    index: i,
+    value: ""
+  });
+  return tokens;
+}
+/**
+ * Parse a string for the raw tokens.
+ */
+
+
+function parse(str, options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  var tokens = lexer(str);
+  var _a = options.prefixes,
+      prefixes = _a === void 0 ? "./" : _a;
+  var defaultPattern = "[^".concat(escapeString(options.delimiter || "/#?"), "]+?");
+  var result = [];
+  var key = 0;
+  var i = 0;
+  var path = "";
+
+  var tryConsume = function (type) {
+    if (i < tokens.length && tokens[i].type === type) return tokens[i++].value;
+  };
+
+  var mustConsume = function (type) {
+    var value = tryConsume(type);
+    if (value !== undefined) return value;
+    var _a = tokens[i],
+        nextType = _a.type,
+        index = _a.index;
+    throw new TypeError("Unexpected ".concat(nextType, " at ").concat(index, ", expected ").concat(type));
+  };
+
+  var consumeText = function () {
+    var result = "";
+    var value;
+
+    while (value = tryConsume("CHAR") || tryConsume("ESCAPED_CHAR")) {
+      result += value;
+    }
+
+    return result;
+  };
+
+  while (i < tokens.length) {
+    var char = tryConsume("CHAR");
+    var name = tryConsume("NAME");
+    var pattern = tryConsume("PATTERN");
+
+    if (name || pattern) {
+      var prefix = char || "";
+
+      if (prefixes.indexOf(prefix) === -1) {
+        path += prefix;
+        prefix = "";
+      }
+
+      if (path) {
+        result.push(path);
+        path = "";
+      }
+
+      result.push({
+        name: name || key++,
+        prefix: prefix,
+        suffix: "",
+        pattern: pattern || defaultPattern,
+        modifier: tryConsume("MODIFIER") || ""
+      });
+      continue;
+    }
+
+    var value = char || tryConsume("ESCAPED_CHAR");
+
+    if (value) {
+      path += value;
+      continue;
+    }
+
+    if (path) {
+      result.push(path);
+      path = "";
+    }
+
+    var open = tryConsume("OPEN");
+
+    if (open) {
+      var prefix = consumeText();
+      var name_1 = tryConsume("NAME") || "";
+      var pattern_1 = tryConsume("PATTERN") || "";
+      var suffix = consumeText();
+      mustConsume("CLOSE");
+      result.push({
+        name: name_1 || (pattern_1 ? key++ : ""),
+        pattern: name_1 && !pattern_1 ? defaultPattern : pattern_1,
+        prefix: prefix,
+        suffix: suffix,
+        modifier: tryConsume("MODIFIER") || ""
+      });
+      continue;
+    }
+
+    mustConsume("END");
+  }
+
+  return result;
+}
+/**
+ * Compile a string to a template function for the path.
+ */
+
+
+function compile(str, options) {
+  return tokensToFunction(parse(str, options), options);
+}
+/**
+ * Expose a method for transforming tokens into the path function.
+ */
+
+
+function tokensToFunction(tokens, options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  var reFlags = flags(options);
+  var _a = options.encode,
+      encode = _a === void 0 ? function (x) {
+    return x;
+  } : _a,
+      _b = options.validate,
+      validate = _b === void 0 ? true : _b; // Compile all the tokens into regexps.
+
+  var matches = tokens.map(function (token) {
+    if (typeof token === "object") {
+      return new RegExp("^(?:".concat(token.pattern, ")$"), reFlags);
+    }
+  });
+  return function (data) {
+    var path = "";
+
+    for (var i = 0; i < tokens.length; i++) {
+      var token = tokens[i];
+
+      if (typeof token === "string") {
+        path += token;
+        continue;
+      }
+
+      var value = data ? data[token.name] : undefined;
+      var optional = token.modifier === "?" || token.modifier === "*";
+      var repeat = token.modifier === "*" || token.modifier === "+";
+
+      if (Array.isArray(value)) {
+        if (!repeat) {
+          throw new TypeError("Expected \"".concat(token.name, "\" to not repeat, but got an array"));
+        }
+
+        if (value.length === 0) {
+          if (optional) continue;
+          throw new TypeError("Expected \"".concat(token.name, "\" to not be empty"));
+        }
+
+        for (var j = 0; j < value.length; j++) {
+          var segment = encode(value[j], token);
+
+          if (validate && !matches[i].test(segment)) {
+            throw new TypeError("Expected all \"".concat(token.name, "\" to match \"").concat(token.pattern, "\", but got \"").concat(segment, "\""));
+          }
+
+          path += token.prefix + segment + token.suffix;
+        }
+
+        continue;
+      }
+
+      if (typeof value === "string" || typeof value === "number") {
+        var segment = encode(String(value), token);
+
+        if (validate && !matches[i].test(segment)) {
+          throw new TypeError("Expected \"".concat(token.name, "\" to match \"").concat(token.pattern, "\", but got \"").concat(segment, "\""));
+        }
+
+        path += token.prefix + segment + token.suffix;
+        continue;
+      }
+
+      if (optional) continue;
+      var typeOfMessage = repeat ? "an array" : "a string";
+      throw new TypeError("Expected \"".concat(token.name, "\" to be ").concat(typeOfMessage));
+    }
+
+    return path;
+  };
+}
+/**
+ * Create path match function from `path-to-regexp` spec.
+ */
+
+
+function match(str, options) {
+  var keys = [];
+  var re = pathToRegexp(str, keys, options);
+  return regexpToFunction(re, keys, options);
+}
+/**
+ * Create a path match function from `path-to-regexp` output.
+ */
+
+
+function regexpToFunction(re, keys, options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  var _a = options.decode,
+      decode = _a === void 0 ? function (x) {
+    return x;
+  } : _a;
+  return function (pathname) {
+    var m = re.exec(pathname);
+    if (!m) return false;
+    var path = m[0],
+        index = m.index;
+    var params = Object.create(null);
+
+    var _loop_1 = function (i) {
+      if (m[i] === undefined) return "continue";
+      var key = keys[i - 1];
+
+      if (key.modifier === "*" || key.modifier === "+") {
+        params[key.name] = m[i].split(key.prefix + key.suffix).map(function (value) {
+          return decode(value, key);
+        });
+      } else {
+        params[key.name] = decode(m[i], key);
+      }
+    };
+
+    for (var i = 1; i < m.length; i++) {
+      _loop_1(i);
+    }
+
+    return {
+      path: path,
+      index: index,
+      params: params
+    };
+  };
+}
+/**
+ * Escape a regular expression string.
+ */
+
+
+function escapeString(str) {
+  return str.replace(/([.+*?=^!:${}()[\]|/\\])/g, "\\$1");
+}
+/**
+ * Get the flags for a regexp from the options.
+ */
+
+
+function flags(options) {
+  return options && options.sensitive ? "" : "i";
+}
+/**
+ * Pull out keys from a regexp.
+ */
+
+
+function regexpToRegexp(path, keys) {
+  if (!keys) return path;
+  var groupsRegex = /\((?:\?<(.*?)>)?(?!\?)/g;
+  var index = 0;
+  var execResult = groupsRegex.exec(path.source);
+
+  while (execResult) {
+    keys.push({
+      // Use parenthesized substring match if available, index otherwise
+      name: execResult[1] || index++,
+      prefix: "",
+      suffix: "",
+      modifier: "",
+      pattern: ""
+    });
+    execResult = groupsRegex.exec(path.source);
+  }
+
+  return path;
+}
+/**
+ * Transform an array into a regexp.
+ */
+
+
+function arrayToRegexp(paths, keys, options) {
+  var parts = paths.map(function (path) {
+    return pathToRegexp(path, keys, options).source;
+  });
+  return new RegExp("(?:".concat(parts.join("|"), ")"), flags(options));
+}
+/**
+ * Create a path regexp from string input.
+ */
+
+
+function stringToRegexp(path, keys, options) {
+  return tokensToRegexp(parse(path, options), keys, options);
+}
+/**
+ * Expose a function for taking tokens and returning a RegExp.
+ */
+
+
+function tokensToRegexp(tokens, keys, options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  var _a = options.strict,
+      strict = _a === void 0 ? false : _a,
+      _b = options.start,
+      start = _b === void 0 ? true : _b,
+      _c = options.end,
+      end = _c === void 0 ? true : _c,
+      _d = options.encode,
+      encode = _d === void 0 ? function (x) {
+    return x;
+  } : _d,
+      _e = options.delimiter,
+      delimiter = _e === void 0 ? "/#?" : _e,
+      _f = options.endsWith,
+      endsWith = _f === void 0 ? "" : _f;
+  var endsWithRe = "[".concat(escapeString(endsWith), "]|$");
+  var delimiterRe = "[".concat(escapeString(delimiter), "]");
+  var route = start ? "^" : ""; // Iterate over the tokens and create our regexp string.
+
+  for (var _i = 0, tokens_1 = tokens; _i < tokens_1.length; _i++) {
+    var token = tokens_1[_i];
+
+    if (typeof token === "string") {
+      route += escapeString(encode(token));
+    } else {
+      var prefix = escapeString(encode(token.prefix));
+      var suffix = escapeString(encode(token.suffix));
+
+      if (token.pattern) {
+        if (keys) keys.push(token);
+
+        if (prefix || suffix) {
+          if (token.modifier === "+" || token.modifier === "*") {
+            var mod = token.modifier === "*" ? "?" : "";
+            route += "(?:".concat(prefix, "((?:").concat(token.pattern, ")(?:").concat(suffix).concat(prefix, "(?:").concat(token.pattern, "))*)").concat(suffix, ")").concat(mod);
+          } else {
+            route += "(?:".concat(prefix, "(").concat(token.pattern, ")").concat(suffix, ")").concat(token.modifier);
+          }
+        } else {
+          if (token.modifier === "+" || token.modifier === "*") {
+            route += "((?:".concat(token.pattern, ")").concat(token.modifier, ")");
+          } else {
+            route += "(".concat(token.pattern, ")").concat(token.modifier);
+          }
+        }
+      } else {
+        route += "(?:".concat(prefix).concat(suffix, ")").concat(token.modifier);
+      }
+    }
+  }
+
+  if (end) {
+    if (!strict) route += "".concat(delimiterRe, "?");
+    route += !options.endsWith ? "$" : "(?=".concat(endsWithRe, ")");
+  } else {
+    var endToken = tokens[tokens.length - 1];
+    var isEndDelimited = typeof endToken === "string" ? delimiterRe.indexOf(endToken[endToken.length - 1]) > -1 : endToken === undefined;
+
+    if (!strict) {
+      route += "(?:".concat(delimiterRe, "(?=").concat(endsWithRe, "))?");
+    }
+
+    if (!isEndDelimited) {
+      route += "(?=".concat(delimiterRe, "|").concat(endsWithRe, ")");
+    }
+  }
+
+  return new RegExp(route, flags(options));
+}
+/**
+ * Normalize the given path string, returning a regular expression.
+ *
+ * An empty array can be passed in for the keys, which will hold the
+ * placeholder key descriptions. For example, using `/user/:id`, `keys` will
+ * contain `[{ name: 'id', delimiter: '/', optional: false, repeat: false }]`.
+ */
+
+
+function pathToRegexp(path, keys, options) {
+  if (path instanceof RegExp) return regexpToRegexp(path, keys);
+  if (Array.isArray(path)) return arrayToRegexp(path, keys, options);
+  return stringToRegexp(path, keys, options);
+}
+},{}],"../src/Parser.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _pathToRegexp = require("path-to-regexp");
+
+var parseQuery = function parseQuery(q) {
+  if (q === void 0) {
+    q = window.location.search;
+  }
+
+  if (!q) return {};
+  var query_string = q.substring(1);
+  var vars = query_string.split('&');
+  var query = {};
+
+  for (var i = 0; i < vars.length; i++) {
+    var pair = vars[i].split('=');
+    query[pair[0]] = pair[1];
+    query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
+  }
+
+  return query;
+};
+
+var isMatch = function isMatch(regex_path, path) {
+  var m = (0, _pathToRegexp.match)(regex_path, {
+    decode: decodeURIComponent
+  });
+  var matches = m(path);
+  return matches ? matches.params : null;
+};
+
+var Parser = {
+  isMatch: isMatch,
+  parseQuery: parseQuery
+};
+var _default = Parser;
+exports.default = _default;
+},{"path-to-regexp":"../node_modules/path-to-regexp/dist.es2015/index.js"}],"../src/factory.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Factory = exports.Excute = void 0;
+
+var _tslib = require("tslib");
+
+var _Parser = _interopRequireDefault(require("./Parser"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var Factory = new Map();
+exports.Factory = Factory;
+
+var Excute = function Excute() {
+  var isMatched = false;
+  var invalids = [];
+  Factory.forEach(function (item, key) {
+    if (item.params) {
+      Factory.set(key, (0, _tslib.__assign)((0, _tslib.__assign)({}, item), {
+        params: null
+      }));
+      item.dispatch();
+    }
+
+    if (item.path) {
+      var params = _Parser.default.isMatch(item.path, window.location.pathname);
+
+      if (params) {
+        isMatched = true;
+        Factory.set(key, (0, _tslib.__assign)((0, _tslib.__assign)({}, item), {
+          params: params
+        }));
+        item.dispatch();
+      }
+    } else {
+      invalids.push(item);
+    }
+  });
+  !isMatched && invalids.forEach(function (item) {
+    Factory.set(item.id, (0, _tslib.__assign)((0, _tslib.__assign)({}, item), {
+      params: {}
+    }));
+    item.dispatch();
+  });
+};
+
+exports.Excute = Excute;
+window.addEventListener('popstate', function () {
+  return Excute();
+});
+},{"tslib":"../node_modules/tslib/tslib.es6.js","./Parser":"../src/Parser.ts"}],"../src/components/RouteProvider.tsx":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _react = require("react");
+
+var _factory = require("../factory");
+
+var RouteProvider = function RouteProvider(_a) {
+  var children = _a.children;
+  (0, _react.useEffect)(function () {
+    (0, _factory.Excute)();
+  }, []);
+  return children;
+};
+
+var _default = RouteProvider;
+exports.default = _default;
+},{"react":"../node_modules/react/index.js","../factory":"../src/factory.ts"}],"../src/hooks/Router.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var Router = {
+  go: function go(path) {
+    window.history.pushState({
+      pagex: true,
+      path: path
+    }, "", path);
+    dispatchEvent(new PopStateEvent("popstate", {
+      state: {
+        pagex: true,
+        path: path
+      }
+    }));
+  },
+  reload: function reload() {
+    dispatchEvent(new PopStateEvent("popstate", {
+      state: {
+        path: window.location.pathname,
+        pagex: true
+      }
+    }));
+  },
+  back: function back() {
+    return window.history.back();
+  },
+  forward: function forward() {
+    return window.history.forward();
+  }
+};
+var _default = Router;
+exports.default = _default;
 },{}],"../src/hooks/useMatch.ts":[function(require,module,exports) {
 "use strict";
 
@@ -38301,81 +38779,40 @@ var useMatch = function useMatch(path) {
       _dispatch = _a[1];
 
   (0, _react.useMemo)(function () {
-    var items = _factory.Factory.routes[path];
-    if (!items) _factory.Factory.routes[path] = {};
-    _factory.Factory.routes[path][id] = {
+    var params = null;
+
+    if (path) {
+      params = _Parser.default.isMatch(path, window.location.pathname);
+    }
+
+    _factory.Factory.set(id, {
+      id: id,
+      params: params,
       dispatch: function dispatch() {},
       path: path
-    };
+    }); // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
   (0, _react.useEffect)(function () {
-    _factory.Factory.routes[path][id] = (0, _tslib.__assign)((0, _tslib.__assign)({}, _factory.Factory.routes[path][id]), {
+    _factory.Factory.set(id, (0, _tslib.__assign)((0, _tslib.__assign)({}, _factory.Factory.get(id)), {
       dispatch: function dispatch() {
         return _dispatch(Math.random());
       }
-    });
+    }));
+
     return function () {
-      delete _factory.Factory.routes[path][id];
-    };
-  }, []); // Initial Check
-
-  (0, _react.useMemo)(function () {
-    var match = _Parser.default.isMatch(path, window.location.pathname);
-
-    if (match) {
-      _factory.Factory.active = path;
-      _factory.Factory.params = match.params;
-      _factory.Factory.query = match.query;
-    }
+      _factory.Factory.delete(id);
+    }; // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  return _factory.Factory.active === path ? {
-    params: _factory.Factory.params,
-    query: _factory.Factory.query
-  } : null;
+
+  var item = _factory.Factory.get(id);
+
+  return item === null || item === void 0 ? void 0 : item.params;
 };
 
 var _default = useMatch;
 exports.default = _default;
-},{"tslib":"../node_modules/tslib/tslib.es6.js","react":"../node_modules/react/index.js","../factory":"../src/factory.ts","../Parser":"../src/Parser.ts"}],"../src/hooks/useInvalid.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _tslib = require("tslib");
-
-var _react = require("react");
-
-var _factory = require("../factory");
-
-var useInvaid = function useInvaid() {
-  var id = (0, _react.useId)();
-
-  var _a = (0, _react.useState)(0),
-      s = _a[0],
-      _dispatch = _a[1];
-
-  (0, _react.useEffect)(function () {
-    _factory.Factory.invalids[id] = (0, _tslib.__assign)((0, _tslib.__assign)({}, _factory.Factory.invalids[id]), {
-      dispatch: function dispatch() {
-        return _dispatch(Math.random());
-      }
-    });
-
-    _dispatch(Math.random());
-
-    return function () {
-      delete _factory.Factory.invalids[id];
-    };
-  }, []);
-  return _factory.Factory.active ? false : true;
-};
-
-var _default = useInvaid;
-exports.default = _default;
-},{"tslib":"../node_modules/tslib/tslib.es6.js","react":"../node_modules/react/index.js","../factory":"../src/factory.ts"}],"../src/components/Link.tsx":[function(require,module,exports) {
+},{"tslib":"../node_modules/tslib/tslib.es6.js","react":"../node_modules/react/index.js","../factory":"../src/factory.ts","../Parser":"../src/Parser.ts"}],"../src/components/Link.tsx":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38392,18 +38829,18 @@ var _Router = _interopRequireDefault(require("../hooks/Router"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var Link = function Link(_a) {
-  var path = _a.path,
-      passHref = _a.passHref,
+  var href = _a.href,
+      noHref = _a.noHref,
       children = _a.children,
       label = _a.label,
       component = _a.component;
-  return (0, _react.createElement)(component || 'a', (0, _tslib.__assign)((0, _tslib.__assign)({}, passHref !== false ? {
-    href: path
+  return (0, _react.createElement)(component || 'a', (0, _tslib.__assign)((0, _tslib.__assign)({}, noHref !== false ? {
+    href: href
   } : {}), {
     onClick: function onClick(e) {
       e.preventDefault();
 
-      _Router.default.go(path);
+      _Router.default.go(href);
     }
   }), children || label);
 };
@@ -38418,42 +38855,24 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 
-var _tslib = require("tslib");
-
 var _react = _interopRequireDefault(require("react"));
 
 var _useMatch = _interopRequireDefault(require("../hooks/useMatch"));
 
-var _useInvalid = _interopRequireDefault(require("../hooks/useInvalid"));
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var Valid = function Valid(_a) {
+var Route = function Route(_a) {
   var path = _a.path,
       Render = _a.render;
-  var option = (0, _useMatch.default)(path);
-  return option ? _react.default.createElement(Render, (0, _tslib.__assign)({}, option)) : _react.default.createElement(_react.default.Fragment, null);
-};
-
-var InValid = function InValid(_a) {
-  var Render = _a.render;
-  var isError = (0, _useInvalid.default)();
-  return isError ? _react.default.createElement(Render, null) : _react.default.createElement(_react.default.Fragment, null);
-};
-
-var Route = function Route(props) {
-  if (typeof props.path === 'string') {
-    return _react.default.createElement(Valid, (0, _tslib.__assign)({}, props, {
-      path: props.path
-    }));
-  }
-
-  return _react.default.createElement(InValid, (0, _tslib.__assign)({}, props));
+  var params = (0, _useMatch.default)(path);
+  return params ? _react.default.createElement(Render, {
+    params: params
+  }) : _react.default.createElement(_react.default.Fragment, null);
 };
 
 var _default = Route;
 exports.default = _default;
-},{"tslib":"../node_modules/tslib/tslib.es6.js","react":"../node_modules/react/index.js","../hooks/useMatch":"../src/hooks/useMatch.ts","../hooks/useInvalid":"../src/hooks/useInvalid.ts"}],"../src/index.ts":[function(require,module,exports) {
+},{"react":"../node_modules/react/index.js","../hooks/useMatch":"../src/hooks/useMatch.ts"}],"../src/index.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38465,10 +38884,10 @@ Object.defineProperty(exports, "Link", {
     return _Link.default;
   }
 });
-Object.defineProperty(exports, "LinkProps", {
+Object.defineProperty(exports, "Parser", {
   enumerable: true,
   get: function () {
-    return _Link.LinkProps;
+    return _Parser.default;
   }
 });
 Object.defineProperty(exports, "Route", {
@@ -38477,10 +38896,10 @@ Object.defineProperty(exports, "Route", {
     return _Route.default;
   }
 });
-Object.defineProperty(exports, "RouteProps", {
+Object.defineProperty(exports, "RouteProvider", {
   enumerable: true,
   get: function () {
-    return _Route.RouteProps;
+    return _RouteProvider.default;
   }
 });
 Object.defineProperty(exports, "Router", {
@@ -38489,31 +38908,25 @@ Object.defineProperty(exports, "Router", {
     return _Router.default;
   }
 });
-Object.defineProperty(exports, "useInvalid", {
-  enumerable: true,
-  get: function () {
-    return _useInvalid.default;
-  }
-});
 Object.defineProperty(exports, "useMatch", {
   enumerable: true,
   get: function () {
     return _useMatch.default;
   }
 });
-exports.useQuery = exports.useParams = void 0;
+exports.useQuery = void 0;
 
-var _factory = require("./factory");
+var _RouteProvider = _interopRequireDefault(require("./components/RouteProvider"));
 
 var _Router = _interopRequireDefault(require("./hooks/Router"));
 
 var _useMatch = _interopRequireDefault(require("./hooks/useMatch"));
 
-var _useInvalid = _interopRequireDefault(require("./hooks/useInvalid"));
-
 var _Link = _interopRequireWildcard(require("./components/Link"));
 
 var _Route = _interopRequireWildcard(require("./components/Route"));
+
+var _Parser = _interopRequireDefault(require("./Parser"));
 
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
 
@@ -38521,18 +38934,9 @@ function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && 
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var useParams = function useParams() {
-  return _factory.Factory.params || {};
-};
-
-exports.useParams = useParams;
-
-var useQuery = function useQuery() {
-  return _factory.Factory.query || {};
-};
-
+var useQuery = _Parser.default.parseQuery;
 exports.useQuery = useQuery;
-},{"./factory":"../src/factory.ts","./hooks/Router":"../src/hooks/Router.ts","./hooks/useMatch":"../src/hooks/useMatch.ts","./hooks/useInvalid":"../src/hooks/useInvalid.ts","./components/Link":"../src/components/Link.tsx","./components/Route":"../src/components/Route.tsx"}],"App.tsx":[function(require,module,exports) {
+},{"./components/RouteProvider":"../src/components/RouteProvider.tsx","./hooks/Router":"../src/hooks/Router.ts","./hooks/useMatch":"../src/hooks/useMatch.ts","./components/Link":"../src/components/Link.tsx","./components/Route":"../src/components/Route.tsx","./Parser":"../src/Parser.ts"}],"App.tsx":[function(require,module,exports) {
 "use strict";
 
 var __createBinding = this && this.__createBinding || (Object.create ? function (o, m, k, k2) {
@@ -38605,9 +39009,9 @@ var MyRoute = function MyRoute() {
 };
 
 exports.default = function () {
-  return React.createElement("div", null, React.createElement("ul", null, React.createElement("li", null, React.createElement(src_1.Link, {
+  return React.createElement(src_1.RouteProvider, null, React.createElement("ul", null, React.createElement("li", null, React.createElement(src_1.Link, {
     label: "Home",
-    path: "/"
+    href: "/"
   })), React.createElement("li", {
     onClick: function onClick() {
       return src_1.Router.go("/asd/" + Math.random());
@@ -38626,13 +39030,13 @@ exports.default = function () {
     }
   }, "Forward"), React.createElement("li", null, React.createElement(src_1.Link, {
     label: "Service",
-    path: "/service"
+    href: "/service"
   })), React.createElement("li", null, React.createElement(src_1.Link, {
     label: "Contact",
-    path: "/contact"
+    href: "/contact"
   })), React.createElement("li", null, React.createElement(src_1.Link, {
     label: "Unknown",
-    path: "/asdads"
+    href: "/asdads"
   }))), React.createElement(MyRoute, null), React.createElement(src_1.Route, {
     path: '/',
     render: Home
@@ -38737,7 +39141,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57587" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56447" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

@@ -1,14 +1,18 @@
-
-const useRouter = {
+const Router = {
    go: (path: string) => {
-      history.pushState({ path }, "", path)
-      dispatchEvent(new PopStateEvent("popstate", { state: { path } }))
+      window.history.pushState({ pagex: true, path }, "", path)
+      dispatchEvent(new PopStateEvent("popstate", { state: { pagex: true, path } }))
    },
    reload: () => {
-      dispatchEvent(new PopStateEvent("popstate", { state: { path: location.pathname } }))
+      dispatchEvent(new PopStateEvent("popstate", {
+         state: {
+            path: window.location.pathname,
+            pagex: true
+         }
+      }))
    },
-   back: () => history.back(),
-   forward: () => history.forward(),
+   back: () => window.history.back(),
+   forward: () => window.history.forward()
 }
 
-export default useRouter
+export default Router
