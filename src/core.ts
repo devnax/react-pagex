@@ -92,31 +92,28 @@ export interface useRouteProps {
 }
 export const useRoute = (path: string) => {
    const uid = useId()
-   const [d, dispatch] = useState(0)
+   const [, dispatch] = useState(0)
    const groupId = useMemo(() => core.currentGroup, [])
    const group = useMemo(() => groupId && core.groups.get(groupId), [])
-   useMemo(() => {
+
+   const params = useMemo(() => {
+      const params = Parser.isMatch(path, window.location.pathname) || false
       if (group) {
          group.routes.set(uid, {
             dispatch: () => { },
             path,
-            params: false
+            params
          })
       }
+      return params
    }, [])
-
-   const params = useMemo(() => {
-      let _params: RoutesProps['params'] = Parser.isMatch(path, window.location.pathname) || false;
-
-      return _params
-   }, [d])
 
    useEffect(() => {
       if (group) {
          group.routes.set(uid, {
             dispatch: () => dispatch(Math.random()),
             path,
-            params
+            params: params
          })
       }
       return () => {

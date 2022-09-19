@@ -38807,7 +38807,6 @@ var useRoute = function useRoute(path) {
   var uid = (0, _react.useId)();
 
   var _b = (0, _react.useState)(0),
-      d = _b[0],
       _dispatch2 = _b[1];
 
   var groupId = (0, _react.useMemo)(function () {
@@ -38816,20 +38815,19 @@ var useRoute = function useRoute(path) {
   var group = (0, _react.useMemo)(function () {
     return groupId && core.groups.get(groupId);
   }, []);
-  (0, _react.useMemo)(function () {
+  var params = (0, _react.useMemo)(function () {
+    var params = _Parser.default.isMatch(path, window.location.pathname) || false;
+
     if (group) {
       group.routes.set(uid, {
         dispatch: function dispatch() {},
         path: path,
-        params: false
+        params: params
       });
     }
-  }, []);
-  var params = (0, _react.useMemo)(function () {
-    var _params = _Parser.default.isMatch(path, window.location.pathname) || false;
 
-    return _params;
-  }, [d]);
+    return params;
+  }, []);
   (0, _react.useEffect)(function () {
     if (group) {
       group.routes.set(uid, {
@@ -39207,7 +39205,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57575" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52458" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

@@ -183,7 +183,6 @@ var useRoute = function useRoute(path) {
   var uid = useId();
 
   var _useState2 = useState(0),
-      d = _useState2[0],
       _dispatch2 = _useState2[1];
 
   var groupId = useMemo(function () {
@@ -192,20 +191,19 @@ var useRoute = function useRoute(path) {
   var group = useMemo(function () {
     return groupId && core.groups.get(groupId);
   }, []);
-  useMemo(function () {
+  var params = useMemo(function () {
+    var params = Parser.isMatch(path, window.location.pathname) || false;
+
     if (group) {
       group.routes.set(uid, {
         dispatch: function dispatch() {},
         path: path,
-        params: false
+        params: params
       });
     }
-  }, []);
-  var params = useMemo(function () {
-    var _params = Parser.isMatch(path, window.location.pathname) || false;
 
-    return _params;
-  }, [d]);
+    return params;
+  }, []);
   useEffect(function () {
     if (group) {
       group.routes.set(uid, {

@@ -190,7 +190,6 @@ var useRoute = function useRoute(path) {
   var uid = React.useId();
 
   var _useState2 = React.useState(0),
-      d = _useState2[0],
       _dispatch2 = _useState2[1];
 
   var groupId = React.useMemo(function () {
@@ -199,20 +198,19 @@ var useRoute = function useRoute(path) {
   var group = React.useMemo(function () {
     return groupId && core.groups.get(groupId);
   }, []);
-  React.useMemo(function () {
+  var params = React.useMemo(function () {
+    var params = Parser.isMatch(path, window.location.pathname) || false;
+
     if (group) {
       group.routes.set(uid, {
         dispatch: function dispatch() {},
         path: path,
-        params: false
+        params: params
       });
     }
-  }, []);
-  var params = React.useMemo(function () {
-    var _params = Parser.isMatch(path, window.location.pathname) || false;
 
-    return _params;
-  }, [d]);
+    return params;
+  }, []);
   React.useEffect(function () {
     if (group) {
       group.routes.set(uid, {
