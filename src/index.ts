@@ -1,10 +1,9 @@
-import RouteProvider from './components/RouteProvider'
-import Router from "./hooks/Router"
-import useMatch from "./hooks/useMatch"
+import Navigate from "./navigate"
 import Link, { LinkProps } from "./components/Link"
 import Route, { RouteProps } from "./components/Route"
+import Routes, { RoutesProps } from "./components/Routes"
 import Parser from "./Parser"
-export { RouteProvider, Link, useMatch, Router, Route, Parser }
-export type { LinkProps, RouteProps }
-
+export { Link, Navigate, Routes, Route, Parser }
+export type { LinkProps, RouteProps, RoutesProps }
 export const useQuery = Parser.parseQuery
+export * from './core'

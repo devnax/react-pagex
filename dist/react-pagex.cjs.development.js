@@ -8,6 +8,35 @@ var React = require('react');
 var React__default = _interopDefault(React);
 var pathToRegexp = require('path-to-regexp');
 
+var navigate = {
+  go: function go(path) {
+    window.history.pushState({
+      pagex: true,
+      path: path
+    }, "", path);
+    dispatchEvent(new PopStateEvent("popstate", {
+      state: {
+        pagex: true,
+        path: path
+      }
+    }));
+  },
+  reload: function reload() {
+    dispatchEvent(new PopStateEvent("popstate", {
+      state: {
+        path: window.location.pathname,
+        pagex: true
+      }
+    }));
+  },
+  back: function back() {
+    return window.history.back();
+  },
+  forward: function forward() {
+    return window.history.forward();
+  }
+};
+
 function _extends() {
   _extends = Object.assign ? Object.assign.bind() : function (target) {
     for (var i = 1; i < arguments.length; i++) {
@@ -24,6 +53,37 @@ function _extends() {
   };
   return _extends.apply(this, arguments);
 }
+
+function _objectWithoutPropertiesLoose(source, excluded) {
+  if (source == null) return {};
+  var target = {};
+  var sourceKeys = Object.keys(source);
+  var key, i;
+
+  for (i = 0; i < sourceKeys.length; i++) {
+    key = sourceKeys[i];
+    if (excluded.indexOf(key) >= 0) continue;
+    target[key] = source[key];
+  }
+
+  return target;
+}
+
+var Link = function Link(_ref) {
+  var href = _ref.href,
+      noHref = _ref.noHref,
+      children = _ref.children,
+      label = _ref.label,
+      component = _ref.component;
+  return React.createElement(component || 'a', _extends({}, noHref !== false ? {
+    href: href
+  } : {}, {
+    onClick: function onClick(e) {
+      e.preventDefault();
+      navigate.go(href);
+    }
+  }), children || label);
+};
 
 var parseQuery = function parseQuery(q) {
   if (q === void 0) {
@@ -57,146 +117,155 @@ var Parser = {
   parseQuery: parseQuery
 };
 
-var Factory = /*#__PURE__*/new Map();
-var Excute = function Excute() {
-  var isMatched = false;
-  var invalids = [];
-  Factory.forEach(function (item, key) {
-    if (item.params) {
-      Factory.set(key, _extends({}, item, {
-        params: null
-      }));
-      item.dispatch();
-    }
-
-    if (item.path) {
-      var params = Parser.isMatch(item.path, window.location.pathname);
-
-      if (params) {
-        isMatched = true;
-        Factory.set(key, _extends({}, item, {
-          params: params
-        }));
-        item.dispatch();
-      }
-    } else {
-      invalids.push(item);
-    }
-  });
-  !isMatched && invalids.forEach(function (item) {
-    Factory.set(item.id, _extends({}, item, {
-      params: {}
-    }));
-    item.dispatch();
-  });
+var core = {
+  currentGroup: null,
+  groups: /*#__PURE__*/new Map(),
+  actives: /*#__PURE__*/new Map()
 };
-window.addEventListener('popstate', function () {
-  return Excute();
-});
-
-var RouteProvider = function RouteProvider(_ref) {
-  var children = _ref.children;
-  React.useEffect(function () {
-    Excute();
-  }, []);
-  return children;
-};
-
-var Router = {
-  go: function go(path) {
-    window.history.pushState({
-      pagex: true,
-      path: path
-    }, "", path);
-    dispatchEvent(new PopStateEvent("popstate", {
-      state: {
-        pagex: true,
-        path: path
-      }
-    }));
-  },
-  reload: function reload() {
-    dispatchEvent(new PopStateEvent("popstate", {
-      state: {
-        path: window.location.pathname,
-        pagex: true
-      }
-    }));
-  },
-  back: function back() {
-    return window.history.back();
-  },
-  forward: function forward() {
-    return window.history.forward();
-  }
-};
-
-var useMatch = function useMatch(path) {
-  var id = React.useId();
+var useGroup = function useGroup(props) {
+  var uid = React.useId();
 
   var _useState = React.useState(0),
+      d = _useState[0],
       _dispatch = _useState[1];
 
+  var prevGroupId = React.useMemo(function () {
+    return core.currentGroup;
+  }, []); // set current group
+
   React.useMemo(function () {
-    var params = null;
-
-    if (path) {
-      params = Parser.isMatch(path, window.location.pathname);
-    }
-
-    Factory.set(id, {
-      id: id,
-      params: params,
+    core.currentGroup = uid;
+    core.groups.set(uid, _extends({}, props, {
       dispatch: function dispatch() {},
-      path: path
-    }); // eslint-disable-next-line react-hooks/exhaustive-deps
+      routes: new Map()
+    }));
   }, []);
   React.useEffect(function () {
-    Factory.set(id, _extends({}, Factory.get(id), {
-      dispatch: function dispatch() {
-        return _dispatch(Math.random());
-      }
-    }));
-    return function () {
-      Factory["delete"](id);
-    }; // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  var item = Factory.get(id);
-  return item == null ? void 0 : item.params;
-};
+    core.currentGroup = prevGroupId;
+    var get = core.groups.get(uid);
 
-var Link = function Link(_ref) {
-  var href = _ref.href,
-      noHref = _ref.noHref,
-      children = _ref.children,
-      label = _ref.label,
-      component = _ref.component;
-  return React.createElement(component || 'a', _extends({}, noHref !== false ? {
-    href: href
-  } : {}, {
-    onClick: function onClick(e) {
-      e.preventDefault();
-      Router.go(href);
+    if (get) {
+      core.groups.set(uid, _extends({}, get, {
+        dispatch: function dispatch() {
+          return _dispatch(Math.random());
+        }
+      }));
     }
-  }), children || label);
+
+    return function () {
+      core.groups["delete"](uid);
+    };
+  }, []);
+  React.useEffect(function () {
+    var group = core.groups.get(uid);
+
+    if (group) {
+      var found = false;
+      group.routes.forEach(function (route, routeId) {
+        var path = group.basepath ? "" + group.basepath + route.path : route.path;
+        var params = Parser.isMatch(path, window.location.pathname) || false;
+
+        if (params || route.params) {
+          group.routes.set(routeId, _extends({}, route, {
+            params: params
+          }));
+          route.dispatch();
+        }
+
+        if (!found && params) {
+          group.onFound && group.onFound(route);
+          found = true;
+        }
+      });
+
+      if (!found) {
+        group.onError && group.onError();
+      }
+    }
+  }, [d]);
 };
+var useRoute = function useRoute(path) {
+  var _group$routes$get;
+
+  var uid = React.useId();
+
+  var _useState2 = React.useState(0),
+      d = _useState2[0],
+      _dispatch2 = _useState2[1];
+
+  var groupId = React.useMemo(function () {
+    return core.currentGroup;
+  }, []);
+  var group = React.useMemo(function () {
+    return groupId && core.groups.get(groupId);
+  }, []);
+  React.useMemo(function () {
+    if (group) {
+      group.routes.set(uid, {
+        dispatch: function dispatch() {},
+        path: path,
+        params: false
+      });
+    }
+  }, []);
+  var params = React.useMemo(function () {
+    var _params = Parser.isMatch(path, window.location.pathname) || false;
+
+    return _params;
+  }, [d]);
+  React.useEffect(function () {
+    if (group) {
+      group.routes.set(uid, {
+        dispatch: function dispatch() {
+          return _dispatch2(Math.random());
+        },
+        path: path,
+        params: params
+      });
+    }
+
+    return function () {
+      if (group) {
+        group.routes["delete"](uid);
+      }
+    };
+  }, []);
+  return group && ((_group$routes$get = group.routes.get(uid)) == null ? void 0 : _group$routes$get.params);
+};
+window.addEventListener('popstate', function () {
+  core.groups.forEach(function (group) {
+    return group.dispatch();
+  });
+});
 
 var Route = function Route(_ref) {
   var path = _ref.path,
       Render = _ref.render;
-  var params = useMatch(path);
+  var params = useRoute(path);
   return params ? React__default.createElement(Render, {
     params: params
   }) : React__default.createElement(React__default.Fragment, null);
 };
 
+var _excluded = ["children"];
+
+var Routes = function Routes(_ref) {
+  var children = _ref.children,
+      props = _objectWithoutPropertiesLoose(_ref, _excluded);
+
+  useGroup(props);
+  return React__default.createElement(React__default.Fragment, null, children);
+};
+
 var useQuery = Parser.parseQuery;
 
 exports.Link = Link;
+exports.Navigate = navigate;
 exports.Parser = Parser;
 exports.Route = Route;
-exports.RouteProvider = RouteProvider;
-exports.Router = Router;
-exports.useMatch = useMatch;
+exports.Routes = Routes;
+exports.core = core;
+exports.useGroup = useGroup;
 exports.useQuery = useQuery;
+exports.useRoute = useRoute;
 //# sourceMappingURL=react-pagex.cjs.development.js.map

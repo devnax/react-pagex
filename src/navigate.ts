@@ -1,4 +1,4 @@
-const Router = {
+const navigate = {
    go: (path: string) => {
       window.history.pushState({ pagex: true, path }, "", path)
       dispatchEvent(new PopStateEvent("popstate", { state: { pagex: true, path } }))
@@ -15,4 +15,4 @@ const Router = {
    forward: () => window.history.forward()
 }
 
-export default Router
+export default navigate

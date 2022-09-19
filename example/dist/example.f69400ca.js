@@ -37552,7 +37552,44 @@ if ("development" === 'production') {
 } else {
   module.exports = require('./cjs/react-dom.development.js');
 }
-},{"./cjs/react-dom.development.js":"../node_modules/react-dom/cjs/react-dom.development.js"}],"../node_modules/tslib/tslib.es6.js":[function(require,module,exports) {
+},{"./cjs/react-dom.development.js":"../node_modules/react-dom/cjs/react-dom.development.js"}],"../src/navigate.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var navigate = {
+  go: function go(path) {
+    window.history.pushState({
+      pagex: true,
+      path: path
+    }, "", path);
+    dispatchEvent(new PopStateEvent("popstate", {
+      state: {
+        pagex: true,
+        path: path
+      }
+    }));
+  },
+  reload: function reload() {
+    dispatchEvent(new PopStateEvent("popstate", {
+      state: {
+        path: window.location.pathname,
+        pagex: true
+      }
+    }));
+  },
+  back: function back() {
+    return window.history.back();
+  },
+  forward: function forward() {
+    return window.history.forward();
+  }
+};
+var _default = navigate;
+exports.default = _default;
+},{}],"../node_modules/tslib/tslib.es6.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38050,7 +38087,42 @@ function __classPrivateFieldIn(state, receiver) {
   if (receiver === null || typeof receiver !== "object" && typeof receiver !== "function") throw new TypeError("Cannot use 'in' operator on non-object");
   return typeof state === "function" ? receiver === state : state.has(receiver);
 }
-},{}],"../node_modules/path-to-regexp/dist.es2015/index.js":[function(require,module,exports) {
+},{}],"../src/components/Link.tsx":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _tslib = require("tslib");
+
+var _react = require("react");
+
+var _navigate = _interopRequireDefault(require("../navigate"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var Link = function Link(_a) {
+  var href = _a.href,
+      noHref = _a.noHref,
+      children = _a.children,
+      label = _a.label,
+      component = _a.component;
+  return (0, _react.createElement)(component || 'a', (0, _tslib.__assign)((0, _tslib.__assign)({}, noHref !== false ? {
+    href: href
+  } : {}), {
+    onClick: function onClick(e) {
+      e.preventDefault();
+
+      _navigate.default.go(href);
+    }
+  }), children || label);
+};
+
+var _default = Link;
+exports.default = _default;
+},{"tslib":"../node_modules/tslib/tslib.es6.js","react":"../node_modules/react/index.js","../navigate":"../src/navigate.ts"}],"../node_modules/path-to-regexp/dist.es2015/index.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38641,213 +38713,150 @@ var Parser = {
 };
 var _default = Parser;
 exports.default = _default;
-},{"path-to-regexp":"../node_modules/path-to-regexp/dist.es2015/index.js"}],"../src/factory.ts":[function(require,module,exports) {
+},{"path-to-regexp":"../node_modules/path-to-regexp/dist.es2015/index.js"}],"../src/core.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Factory = exports.Excute = void 0;
+exports.useRoute = exports.useGroup = exports.core = void 0;
 
 var _tslib = require("tslib");
+
+var _react = require("react");
 
 var _Parser = _interopRequireDefault(require("./Parser"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var Factory = new Map();
-exports.Factory = Factory;
-
-var Excute = function Excute() {
-  var isMatched = false;
-  var invalids = [];
-  Factory.forEach(function (item, key) {
-    if (item.params) {
-      Factory.set(key, (0, _tslib.__assign)((0, _tslib.__assign)({}, item), {
-        params: null
-      }));
-      item.dispatch();
-    }
-
-    if (item.path) {
-      var params = _Parser.default.isMatch(item.path, window.location.pathname);
-
-      if (params) {
-        isMatched = true;
-        Factory.set(key, (0, _tslib.__assign)((0, _tslib.__assign)({}, item), {
-          params: params
-        }));
-        item.dispatch();
-      }
-    } else {
-      invalids.push(item);
-    }
-  });
-  !isMatched && invalids.forEach(function (item) {
-    Factory.set(item.id, (0, _tslib.__assign)((0, _tslib.__assign)({}, item), {
-      params: {}
-    }));
-    item.dispatch();
-  });
+var core = {
+  currentGroup: null,
+  groups: new Map(),
+  actives: new Map()
 };
+exports.core = core;
 
-exports.Excute = Excute;
-window.addEventListener('popstate', function () {
-  return Excute();
-});
-},{"tslib":"../node_modules/tslib/tslib.es6.js","./Parser":"../src/Parser.ts"}],"../src/components/RouteProvider.tsx":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _react = require("react");
-
-var _factory = require("../factory");
-
-var RouteProvider = function RouteProvider(_a) {
-  var children = _a.children;
-  (0, _react.useEffect)(function () {
-    (0, _factory.Excute)();
-  }, []);
-  return children;
-};
-
-var _default = RouteProvider;
-exports.default = _default;
-},{"react":"../node_modules/react/index.js","../factory":"../src/factory.ts"}],"../src/hooks/Router.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-var Router = {
-  go: function go(path) {
-    window.history.pushState({
-      pagex: true,
-      path: path
-    }, "", path);
-    dispatchEvent(new PopStateEvent("popstate", {
-      state: {
-        pagex: true,
-        path: path
-      }
-    }));
-  },
-  reload: function reload() {
-    dispatchEvent(new PopStateEvent("popstate", {
-      state: {
-        path: window.location.pathname,
-        pagex: true
-      }
-    }));
-  },
-  back: function back() {
-    return window.history.back();
-  },
-  forward: function forward() {
-    return window.history.forward();
-  }
-};
-var _default = Router;
-exports.default = _default;
-},{}],"../src/hooks/useMatch.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _tslib = require("tslib");
-
-var _react = require("react");
-
-var _factory = require("../factory");
-
-var _Parser = _interopRequireDefault(require("../Parser"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var useMatch = function useMatch(path) {
-  var id = (0, _react.useId)();
+var useGroup = function useGroup(props) {
+  var uid = (0, _react.useId)();
 
   var _a = (0, _react.useState)(0),
+      d = _a[0],
       _dispatch = _a[1];
 
+  var prevGroupId = (0, _react.useMemo)(function () {
+    return core.currentGroup;
+  }, []); // set current group
+
   (0, _react.useMemo)(function () {
-    var params = null;
-
-    if (path) {
-      params = _Parser.default.isMatch(path, window.location.pathname);
-    }
-
-    _factory.Factory.set(id, {
-      id: id,
-      params: params,
+    core.currentGroup = uid;
+    core.groups.set(uid, (0, _tslib.__assign)((0, _tslib.__assign)({}, props), {
       dispatch: function dispatch() {},
-      path: path
-    }); // eslint-disable-next-line react-hooks/exhaustive-deps
-
+      routes: new Map()
+    }));
   }, []);
   (0, _react.useEffect)(function () {
-    _factory.Factory.set(id, (0, _tslib.__assign)((0, _tslib.__assign)({}, _factory.Factory.get(id)), {
-      dispatch: function dispatch() {
-        return _dispatch(Math.random());
-      }
-    }));
+    core.currentGroup = prevGroupId;
+    var get = core.groups.get(uid);
+
+    if (get) {
+      core.groups.set(uid, (0, _tslib.__assign)((0, _tslib.__assign)({}, get), {
+        dispatch: function dispatch() {
+          return _dispatch(Math.random());
+        }
+      }));
+    }
 
     return function () {
-      _factory.Factory.delete(id);
-    }; // eslint-disable-next-line react-hooks/exhaustive-deps
+      core.groups.delete(uid);
+    };
   }, []);
+  (0, _react.useEffect)(function () {
+    var group = core.groups.get(uid);
 
-  var item = _factory.Factory.get(id);
+    if (group) {
+      var found_1 = false;
+      group.routes.forEach(function (route, routeId) {
+        var path = group.basepath ? "" + group.basepath + route.path : route.path;
+        var params = _Parser.default.isMatch(path, window.location.pathname) || false;
 
-  return item === null || item === void 0 ? void 0 : item.params;
-};
+        if (params || route.params) {
+          group.routes.set(routeId, (0, _tslib.__assign)((0, _tslib.__assign)({}, route), {
+            params: params
+          }));
+          route.dispatch();
+        }
 
-var _default = useMatch;
-exports.default = _default;
-},{"tslib":"../node_modules/tslib/tslib.es6.js","react":"../node_modules/react/index.js","../factory":"../src/factory.ts","../Parser":"../src/Parser.ts"}],"../src/components/Link.tsx":[function(require,module,exports) {
-"use strict";
+        if (!found_1 && params) {
+          group.onFound && group.onFound(route);
+          found_1 = true;
+        }
+      });
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _tslib = require("tslib");
-
-var _react = require("react");
-
-var _Router = _interopRequireDefault(require("../hooks/Router"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var Link = function Link(_a) {
-  var href = _a.href,
-      noHref = _a.noHref,
-      children = _a.children,
-      label = _a.label,
-      component = _a.component;
-  return (0, _react.createElement)(component || 'a', (0, _tslib.__assign)((0, _tslib.__assign)({}, noHref !== false ? {
-    href: href
-  } : {}), {
-    onClick: function onClick(e) {
-      e.preventDefault();
-
-      _Router.default.go(href);
+      if (!found_1) {
+        group.onError && group.onError();
+      }
     }
-  }), children || label);
+  }, [d]);
 };
 
-var _default = Link;
-exports.default = _default;
-},{"tslib":"../node_modules/tslib/tslib.es6.js","react":"../node_modules/react/index.js","../hooks/Router":"../src/hooks/Router.ts"}],"../src/components/Route.tsx":[function(require,module,exports) {
+exports.useGroup = useGroup;
+
+var useRoute = function useRoute(path) {
+  var _a;
+
+  var uid = (0, _react.useId)();
+
+  var _b = (0, _react.useState)(0),
+      d = _b[0],
+      _dispatch2 = _b[1];
+
+  var groupId = (0, _react.useMemo)(function () {
+    return core.currentGroup;
+  }, []);
+  var group = (0, _react.useMemo)(function () {
+    return groupId && core.groups.get(groupId);
+  }, []);
+  (0, _react.useMemo)(function () {
+    if (group) {
+      group.routes.set(uid, {
+        dispatch: function dispatch() {},
+        path: path,
+        params: false
+      });
+    }
+  }, []);
+  var params = (0, _react.useMemo)(function () {
+    var _params = _Parser.default.isMatch(path, window.location.pathname) || false;
+
+    return _params;
+  }, [d]);
+  (0, _react.useEffect)(function () {
+    if (group) {
+      group.routes.set(uid, {
+        dispatch: function dispatch() {
+          return _dispatch2(Math.random());
+        },
+        path: path,
+        params: params
+      });
+    }
+
+    return function () {
+      if (group) {
+        group.routes.delete(uid);
+      }
+    };
+  }, []);
+  return group && ((_a = group.routes.get(uid)) === null || _a === void 0 ? void 0 : _a.params);
+};
+
+exports.useRoute = useRoute;
+window.addEventListener('popstate', function () {
+  core.groups.forEach(function (group) {
+    return group.dispatch();
+  });
+});
+},{"tslib":"../node_modules/tslib/tslib.es6.js","react":"../node_modules/react/index.js","./Parser":"../src/Parser.ts"}],"../src/components/Route.tsx":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38857,14 +38866,14 @@ exports.default = void 0;
 
 var _react = _interopRequireDefault(require("react"));
 
-var _useMatch = _interopRequireDefault(require("../hooks/useMatch"));
+var _core = require("../core");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var Route = function Route(_a) {
   var path = _a.path,
       Render = _a.render;
-  var params = (0, _useMatch.default)(path);
+  var params = (0, _core.useRoute)(path);
   return params ? _react.default.createElement(Render, {
     params: params
   }) : _react.default.createElement(_react.default.Fragment, null);
@@ -38872,16 +38881,55 @@ var Route = function Route(_a) {
 
 var _default = Route;
 exports.default = _default;
-},{"react":"../node_modules/react/index.js","../hooks/useMatch":"../src/hooks/useMatch.ts"}],"../src/index.ts":[function(require,module,exports) {
+},{"react":"../node_modules/react/index.js","../core":"../src/core.ts"}],"../src/components/Routes.tsx":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.default = void 0;
+
+var _tslib = require("tslib");
+
+var _react = _interopRequireDefault(require("react"));
+
+var _core = require("../core");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var Routes = function Routes(_a) {
+  var children = _a.children,
+      props = (0, _tslib.__rest)(_a, ["children"]);
+  (0, _core.useGroup)(props);
+  return _react.default.createElement(_react.default.Fragment, null, children);
+};
+
+var _default = Routes;
+exports.default = _default;
+},{"tslib":"../node_modules/tslib/tslib.es6.js","react":"../node_modules/react/index.js","../core":"../src/core.ts"}],"../src/index.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var _exportNames = {
+  useQuery: true,
+  Navigate: true,
+  Link: true,
+  Route: true,
+  Routes: true,
+  Parser: true
+};
 Object.defineProperty(exports, "Link", {
   enumerable: true,
   get: function () {
     return _Link.default;
+  }
+});
+Object.defineProperty(exports, "Navigate", {
+  enumerable: true,
+  get: function () {
+    return _navigate.default;
   }
 });
 Object.defineProperty(exports, "Parser", {
@@ -38896,37 +38944,37 @@ Object.defineProperty(exports, "Route", {
     return _Route.default;
   }
 });
-Object.defineProperty(exports, "RouteProvider", {
+Object.defineProperty(exports, "Routes", {
   enumerable: true,
   get: function () {
-    return _RouteProvider.default;
-  }
-});
-Object.defineProperty(exports, "Router", {
-  enumerable: true,
-  get: function () {
-    return _Router.default;
-  }
-});
-Object.defineProperty(exports, "useMatch", {
-  enumerable: true,
-  get: function () {
-    return _useMatch.default;
+    return _Routes.default;
   }
 });
 exports.useQuery = void 0;
 
-var _RouteProvider = _interopRequireDefault(require("./components/RouteProvider"));
-
-var _Router = _interopRequireDefault(require("./hooks/Router"));
-
-var _useMatch = _interopRequireDefault(require("./hooks/useMatch"));
+var _navigate = _interopRequireDefault(require("./navigate"));
 
 var _Link = _interopRequireWildcard(require("./components/Link"));
 
 var _Route = _interopRequireWildcard(require("./components/Route"));
 
+var _Routes = _interopRequireWildcard(require("./components/Routes"));
+
 var _Parser = _interopRequireDefault(require("./Parser"));
+
+var _core = require("./core");
+
+Object.keys(_core).forEach(function (key) {
+  if (key === "default" || key === "__esModule") return;
+  if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
+  if (key in exports && exports[key] === _core[key]) return;
+  Object.defineProperty(exports, key, {
+    enumerable: true,
+    get: function () {
+      return _core[key];
+    }
+  });
+});
 
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
 
@@ -38936,7 +38984,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var useQuery = _Parser.default.parseQuery;
 exports.useQuery = useQuery;
-},{"./components/RouteProvider":"../src/components/RouteProvider.tsx","./hooks/Router":"../src/hooks/Router.ts","./hooks/useMatch":"../src/hooks/useMatch.ts","./components/Link":"../src/components/Link.tsx","./components/Route":"../src/components/Route.tsx","./Parser":"../src/Parser.ts"}],"App.tsx":[function(require,module,exports) {
+},{"./navigate":"../src/navigate.ts","./components/Link":"../src/components/Link.tsx","./components/Route":"../src/components/Route.tsx","./components/Routes":"../src/components/Routes.tsx","./Parser":"../src/Parser.ts","./core":"../src/core.ts"}],"App.tsx":[function(require,module,exports) {
 "use strict";
 
 var __createBinding = this && this.__createBinding || (Object.create ? function (o, m, k, k2) {
@@ -38981,12 +39029,43 @@ var React = __importStar(require("react"));
 
 var src_1 = require("../src");
 
+var Child = function Child() {
+  return React.createElement("h1", null, "Child");
+};
+
+var ChildA = function ChildA() {
+  return React.createElement("h1", null, "ChildA");
+};
+
+var ChildB = function ChildB() {
+  return React.createElement("h1", null, " ChildB");
+};
+
+var ChildGroup = function ChildGroup() {
+  return React.createElement(src_1.Routes, null, React.createElement("li", null, React.createElement(src_1.Link, {
+    label: "About A",
+    href: "/about/a"
+  })), React.createElement("li", null, React.createElement(src_1.Link, {
+    label: "About B",
+    href: "/about/b"
+  })), React.createElement(src_1.Route, {
+    path: '/about',
+    render: Child
+  }), React.createElement(src_1.Route, {
+    path: '/about/a',
+    render: ChildA
+  }), React.createElement(src_1.Route, {
+    path: '/about/b',
+    render: ChildB
+  }));
+};
+
 var Home = function Home() {
   return React.createElement("h1", null, "Home");
 };
 
 var About = function About() {
-  return React.createElement("h1", null, "About");
+  return React.createElement(React.Fragment, null, React.createElement("h1", null, "Childs"), React.createElement(ChildGroup, null));
 };
 
 var Service = function Service() {
@@ -38997,36 +39076,25 @@ var Contact = function Contact() {
   return React.createElement("h1", null, "Contact");
 };
 
-var Unknown = function Unknown() {
-  return React.createElement("h1", null, "404");
-};
-
-var MyRoute = function MyRoute() {
-  var _a;
-
-  var option = src_1.useMatch('/asd/:id');
-  return option ? React.createElement("h1", null, "Matched ", (_a = option === null || option === void 0 ? void 0 : option.params) === null || _a === void 0 ? void 0 : _a.id) : React.createElement(React.Fragment, null);
-};
-
 exports.default = function () {
-  return React.createElement(src_1.RouteProvider, null, React.createElement("ul", null, React.createElement("li", null, React.createElement(src_1.Link, {
+  return React.createElement(src_1.Routes, null, React.createElement("ul", null, React.createElement("li", null, React.createElement(src_1.Link, {
     label: "Home",
     href: "/"
   })), React.createElement("li", {
     onClick: function onClick() {
-      return src_1.Router.go("/asd/" + Math.random());
+      return src_1.Navigate.go("/asd/" + Math.random());
     }
   }, "ASD"), React.createElement("li", {
     onClick: function onClick() {
-      return src_1.Router.go("/about");
+      return src_1.Navigate.go("/about");
     }
   }, "About"), React.createElement("li", {
     onClick: function onClick() {
-      return src_1.Router.back();
+      return src_1.Navigate.back();
     }
   }, "Back"), React.createElement("li", {
     onClick: function onClick() {
-      return src_1.Router.forward();
+      return src_1.Navigate.forward();
     }
   }, "Forward"), React.createElement("li", null, React.createElement(src_1.Link, {
     label: "Service",
@@ -39037,11 +39105,11 @@ exports.default = function () {
   })), React.createElement("li", null, React.createElement(src_1.Link, {
     label: "Unknown",
     href: "/asdads"
-  }))), React.createElement(MyRoute, null), React.createElement(src_1.Route, {
+  }))), React.createElement(src_1.Route, {
     path: '/',
     render: Home
   }), React.createElement(src_1.Route, {
-    path: '/about',
+    path: '/about/(.*)?',
     render: About
   }), React.createElement(src_1.Route, {
     path: '/service',
@@ -39049,8 +39117,6 @@ exports.default = function () {
   }), React.createElement(src_1.Route, {
     path: '/contact',
     render: Contact
-  }), React.createElement(src_1.Route, {
-    render: Unknown
   }));
 };
 },{"react":"../node_modules/react/index.js","../src":"../src/index.ts"}],"index.tsx":[function(require,module,exports) {
@@ -39141,7 +39207,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56447" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57575" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

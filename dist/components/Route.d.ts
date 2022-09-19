@@ -5,7 +5,7 @@ declare type RenderProps = {
     };
 };
 export interface RouteProps {
-    path?: string;
+    path: string;
     render: ComponentType<RenderProps>;
 }
 declare const Route: ({ path, render: Render }: RouteProps) => JSX.Element;

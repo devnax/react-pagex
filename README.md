@@ -9,12 +9,13 @@ The `react-pagex` is a very tiny library for manage react app routes. It's very 
 
 ```js
 import {
-  RouteProvider, 
   Link, 
-  useMatch, 
+  useRoute, 
+  useGroup, 
   useQuery,
-  Router, 
+  Navigate, 
   Route, 
+  Routes, 
   Parser
 } from 'react-pagex'
 
@@ -26,7 +27,7 @@ import {
 ### Useg
 
 ```jsx
-import {Link, Route} from 'react-pagex'
+import {Link, Routes, Route} from 'react-pagex'
 
 
 const Home = ({params, query}) => {
@@ -40,14 +41,13 @@ const Contact = ({params, query}) => {
   return <h1>Contact</h1>
 }
 
-const ErrorPage = () => {
-  return <h1>404</h1>
-}
-
-
 export default () => {
    return (
-      <RouteProvider>
+      <Routes
+        onError={() => {
+
+        }}
+      >
          <ul>
             <li><Link label="Home" path="/" /></li>
             <li><Link label="Service" path="/service" /></li>
@@ -58,8 +58,7 @@ export default () => {
          <Route path='/about' render={About} />
          <Route path='/service' render={Service} />
          <Route path='/contact' render={Contact} />
-         <Route render={ErrorPage} />
-      </RouteProvider>
+      </Routes>
    )
 }
 
@@ -78,6 +77,7 @@ const LinkComp = ({children, ...props}) => <div>{children}</div>
   component={LinkComp}
 />
 
+// With Children
 <Link 
   href="/"
   noHref={true}
@@ -86,46 +86,73 @@ const LinkComp = ({children, ...props}) => <div>{children}</div>
 
 ```
 
-### Route Component
-
+### Routes Component
+`Routes` used the useGroup hook
 ```jsx
+<Routes 
+  basepath=""
+  onError={() => {
 
+  }}
+  onFound={(route) => {
+
+  }}
+>
+children
+</Routes>
+
+```
+
+### Route Component
+`Route` used the useRoute hook
+```jsx
 <Route 
   path="posts/:id"
   render={Render}
 />
-// Or 404
-<Route 
-  render={Render}
-/>
-
 
 ```
 
 
 
-### Router
+### Navigate
 Navigate Page without `Link` Component
 
 ```js
-import {Router} from 'react-pagex'
+import {Navigate} from 'react-pagex'
 
-Router.go('/path')
-Router.back()
-Router.forward()
-Router.reload()
+Navigate.go('/path')
+Navigate.back()
+Navigate.forward()
+Navigate.reload()
 
 ```
 
 
 
-### useMatch
+### useGroup
 
 ```js
 const App = () => {
-  const params = useMatch('/path')
+   useGroup({
+    basepath: '',
+    onError: () => {},
+    onFound: () => {},
+  })
+  
+  return <>app</>
+}
+
+```
+
+
+### useRoute
+
+```js
+const App = () => {
+  const params = useRoute('/path')
   if(params){
-    return <div>Router Match</div> 
+    return <div>Route Match</div> 
   }
   return <></>
 }

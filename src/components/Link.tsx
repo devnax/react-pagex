@@ -1,5 +1,5 @@
 import { ComponentType, createElement, FC, ReactElement } from 'react'
-import Router from '../hooks/Router'
+import navigate from '../navigate'
 
 export interface LinkProps {
    children?: string | ReactElement;
@@ -15,7 +15,7 @@ const Link: FC<LinkProps> = ({ href, noHref, children, label, component }) => {
       ...(noHref !== false ? { href } : {}),
       onClick: (e: any) => {
          e.preventDefault()
-         Router.go(href)
+         navigate.go(href)
       }
    }, children || label)
 }
